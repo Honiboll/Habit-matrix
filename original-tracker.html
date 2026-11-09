@@ -1,0 +1,758 @@
+یه فایل اچ تی ام ال برام بساز توی این پوشه و این کدو توش قرار بده
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Habit Matrix</title>
+    <style>
+        :root {
+            --bg-main: #09090b;
+            --bg-card: #111114;
+            --border: #222227;
+            --text-main: #f4f4f6;
+            --text-muted: #71717a;
+            --accent: #f5d087;
+            --cell-empty: #18181c;
+            --cell-missed: #1f1f24;
+            --cell-done: #2e291e;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            padding: 28px 36px;
+            min-height: 100vh;
+        }
+
+        /* Top Summary Header */
+        .top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .month-title h1 {
+            font-size: 32px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+        }
+
+        .month-title p {
+            color: var(--text-muted);
+            font-size: 13px;
+            margin-top: 4px;
+        }
+
+        .stats-row {
+            display: flex;
+            gap: 48px;
+            align-items: center;
+        }
+
+        .stat-box {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .stat-box span.label {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .stat-box span.value {
+            font-size: 22px;
+            font-weight: 600;
+        }
+
+        .ring-container {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .ring-svg {
+            width: 64px;
+            height: 64px;
+            transform: rotate(-90deg);
+        }
+
+        .ring-bg {
+            fill: none;
+            stroke: #222227;
+            stroke-width: 6;
+        }
+
+        .ring-progress {
+            fill: none;
+            stroke: var(--accent);
+            stroke-width: 6;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.4s ease;
+        }
+
+        /* Card Generic */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 22px 24px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .card-subtitle {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+
+        /* Habit Matrix */
+        .matrix-card {
+            margin-bottom: 22px;
+            overflow-x: auto;
+        }
+
+        .matrix-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 8px;
+            min-width: 980px;
+        }
+
+        .matrix-table th {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-muted);
+            text-align: center;
+            padding-bottom: 8px;
+        }
+
+        .matrix-table th.habit-col-header {
+            text-align: left;
+            width: 210px;
+            letter-spacing: 0.8px;
+        }
+
+        .day-letter {
+            display: block;
+            font-size: 10px;
+            color: #52525b;
+            margin-bottom: 4px;
+        }
+
+        .day-number {
+            display: inline-block;
+            width: 22px;
+            height: 22px;
+            line-height: 22px;
+            border-radius: 6px;
+            color: var(--text-main);
+        }
+
+        .day-number.today-badge {
+            background: #27272a;
+            color: var(--accent);
+            font-weight: 700;
+        }
+
+        .habit-name-cell {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-right: 14px;
+            height: 30px;
+        }
+
+        .habit-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .delete-btn {
+            background: none;
+            border: none;
+            color: #52525b;
+            cursor: pointer;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        tr:hover .delete-btn {
+            opacity: 1;
+        }
+
+        .delete-btn:hover {
+            color: #ef4444;
+        }
+
+        .cell-wrapper {
+            text-align: center;
+        }
+
+        .habit-cell {
+            width: 22px;
+            height: 22px;
+            border-radius: 6px;
+            background: var(--cell-empty);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            border: 1px solid transparent;
+            font-size: 11px;
+            color: transparent;
+        }
+
+        .habit-cell:hover {
+            border-color: #52525b;
+            transform: scale(1.08);
+        }
+
+        .habit-cell.completed {
+            background: var(--cell-done);
+            color: var(--accent);
+            border-color: rgba(245, 208, 135, 0.35);
+        }
+
+        .habit-cell.today-due {
+            border: 1.5px solid #a1a1aa;
+        }
+
+        .habit-cell.upcoming::after {
+            content: "";
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: #3f3f46;
+        }
+
+        /* Legend & Add Bar */
+        .matrix-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 14px;
+            padding-top: 14px;
+            border-top: 1px solid var(--border);
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .legend {
+            display: flex;
+            gap: 18px;
+            font-size: 12px;
+            color: var(--text-muted);
+            align-items: center;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .add-habit-form {
+            display: flex;
+            gap: 8px;
+        }
+
+        .add-habit-form input {
+            background: #18181c;
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            outline: none;
+        }
+
+        .add-habit-form input:focus {
+            border-color: var(--accent);
+        }
+
+        .add-habit-form button {
+            background: var(--accent);
+            color: #09090b;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* Bottom Grid */
+        .bottom-grid {
+            display: grid;
+            grid-template-columns: 1.5fr 1.1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 1100px) {
+            .bottom-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Trend Chart */
+        .chart-box {
+            height: 190px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .chart-svg {
+            width: 100%;
+            height: 155px;
+            overflow: visible;
+        }
+
+        /* Habit Analysis */
+        .analysis-list {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            max-height: 200px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .analysis-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+        }
+
+        .analysis-left {
+            flex: 1;
+        }
+
+        .analysis-name {
+            font-size: 13px;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .progress-track {
+            width: 100%;
+            height: 5px;
+            background: #1f1f24;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--accent);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .analysis-percent {
+            font-size: 13px;
+            font-weight: 600;
+            width: 40px;
+            text-align: right;
+        }
+
+        /* Top Habits */
+        .top-list {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .top-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 13px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #1a1a1f;
+        }
+
+        .top-rank {
+            color: var(--text-muted);
+            width: 24px;
+            font-size: 12px;
+        }
+
+        .top-title {
+            flex: 1;
+            font-weight: 500;
+        }
+
+        .top-ratio {
+            color: var(--text-muted);
+            margin-right: 14px;
+            font-size: 12px;
+        }
+
+        .top-pct {
+            font-weight: 600;
+            width: 38px;
+            text-align: right;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Top Header -->
+    <div class="top-bar">
+        <div class="month-title">
+            <h1 id="monthName">October</h1>
+            <p>Personal Habit Matrix • macOS Dashboard</p>
+        </div>
+
+        <div class="stats-row">
+            <div class="stat-box">
+                <span class="label">Active habits</span>
+                <span class="value" id="activeHabitsCount">7</span>
+            </div>
+            <div class="stat-box">
+                <span class="label">Avg. daily done</span>
+                <span class="value" id="avgDailyCount">0.0</span>
+            </div>
+            <div class="ring-container">
+                <svg class="ring-svg" viewBox="0 0 72 72">
+                    <circle class="ring-bg" cx="36" cy="36" r="28"></circle>
+                    <circle class="ring-progress" id="monthlyRing" cx="36" cy="36" r="28" stroke-dasharray="175.9"
+                        stroke-dashoffset="175.9"></circle>
+                </svg>
+                <div class="stat-box">
+                    <span class="value" id="monthlyPctText">0%</span>
+                    <span class="label">Monthly goal</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Habit Matrix -->
+    <div class="card matrix-card">
+        <div class="card-header">
+            <span class="card-title">Habit matrix</span>
+            <span class="card-subtitle" id="currentDayLabel">Day 25 of 31</span>
+        </div>
+
+        <table class="matrix-table" id="matrixTable"></table>
+
+        <div class="matrix-footer">
+            <div class="legend">
+                <div class="legend-item">
+                    <span class="habit-cell completed" style="width:16px;height:16px;cursor:default;">✓</span> Completed
+                </div>
+                <div class="legend-item">
+                    <span class="habit-cell" style="width:16px;height:16px;cursor:default;"></span> Missed
+                </div>
+                <div class="legend-item">
+                    <span class="habit-cell today-due" style="width:16px;height:16px;cursor:default;"></span> Due today
+                </div>
+                <div class="legend-item">
+                    <span class="habit-cell upcoming" style="width:16px;height:16px;cursor:default;"></span> Upcoming
+                </div>
+            </div>
+
+            <form class="add-habit-form" id="addHabitForm">
+                <input type="text" id="habitIconInput" placeholder="Icon (e.g. 🏃)" style="width: 110px;"
+                    maxlength="2" />
+                <input type="text" id="habitNameInput" placeholder="New habit name..." required />
+                <button type="submit">+ Add Habit</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bottom Widgets -->
+    <div class="bottom-grid">
+        <!-- Consistency Trend -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Consistency trend</span>
+                <span class="card-subtitle">• Daily completion</span>
+            </div>
+            <div class="chart-box">
+                <svg class="chart-svg" id="trendSvg" viewBox="0 0 500 140" preserveAspectRatio="none"></svg>
+            </div>
+        </div>
+
+        <!-- Habit Analysis -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Habit analysis</span>
+                <span class="card-subtitle">Completion</span>
+            </div>
+            <div class="analysis-list" id="analysisList"></div>
+        </div>
+
+        <!-- Top Habits -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Top habits</span>
+                <span class="card-subtitle">Ranking</span>
+            </div>
+            <div class="top-list" id="topHabitsList"></div>
+        </div>
+    </div>
+
+    <script>
+        const DAYS_IN_MONTH = 31;
+        const CURRENT_DAY = 25; // Simulated current day like the video
+        const DAY_LETTERS = ["T", "F", "S", "S", "M", "T", "W"];
+
+        const defaultHabits = [
+            { id: 1, icon: "☀️", name: "Wake up at 06:00", days: [1, 2, 3, 5, 6, 8, 9, 10, 12, 13, 14, 16, 17, 19, 21, 22] },
+            { id: 2, icon: "🧘", name: "Meditation", days: [1, 3, 5, 7, 10, 12, 15, 18, 20, 23] },
+            { id: 3, icon: "🏋️", name: "Gym", days: [2, 3, 4, 6, 8, 9, 11, 13, 15, 17, 19, 21, 24] },
+            { id: 4, icon: "🚿", name: "Cold shower", days: [1, 2, 5, 7, 8, 11, 13, 14, 16, 18, 20, 22, 24] },
+            { id: 5, icon: "🎯", name: "Deep work", days: [1, 2, 3, 4, 6, 7, 9, 10, 11, 13, 14, 15, 17, 18, 20, 22, 24] },
+            { id: 6, icon: "📖", name: "Read 10 pages", days: [2, 4, 5, 6, 8, 10, 12, 13, 15, 16, 19, 21, 23, 25] },
+            { id: 7, icon: "🎓", name: "Learn a skill", days: [1, 4, 7, 11, 14, 18, 21, 24] },
+            { id: 8, icon: "🌙", name: "Sleep before 23:00", days: [2, 3, 6, 9, 12, 15, 17, 20, 23] }
+        ];
+
+        let habits = JSON.parse(localStorage.getItem("mac_habit_matrix_v1")) || defaultHabits;
+
+        function saveData() {
+            localStorage.setItem("mac_habit_matrix_v1", JSON.stringify(habits));
+        }
+
+        function toggleDay(habitId, day) {
+            const habit = habits.find(h => h.id === habitId);
+            if (!habit) return;
+            const idx = habit.days.indexOf(day);
+            if (idx > -1) {
+                habit.days.splice(idx, 1);
+            } else {
+                habit.days.push(day);
+            }
+            saveData();
+            renderAll();
+        }
+
+        function deleteHabit(habitId) {
+            habits = habits.filter(h => h.id !== habitId);
+            saveData();
+            renderAll();
+        }
+
+        document.getElementById("addHabitForm").addEventListener("submit", (e) => {
+            e.preventDefault();
+            const icon = document.getElementById("habitIconInput").value.trim() || "✨";
+            const name = document.getElementById("habitNameInput").value.trim();
+            if (!name) return;
+            habits.push({
+                id: Date.now(),
+                icon,
+                name,
+                days: []
+            });
+            document.getElementById("habitIconInput").value = "";
+            document.getElementById("habitNameInput").value = "";
+            saveData();
+            renderAll();
+        });
+
+        function renderMatrix() {
+            const table = document.getElementById("matrixTable");
+            let html = `<thead><tr><th class="habit-col-header">MY HABITS</th>`;
+
+            for (let d = 1; d <= DAYS_IN_MONTH; d++) {
+                const letter = DAY_LETTERS[(d - 1) % 7];
+                const isToday = d === CURRENT_DAY;
+                html += `
+          <th>
+            <span class="day-letter">${letter}</span>
+            <span class="day-number ${isToday ? 'today-badge' : ''}">${d}</span>
+          </th>`;
+            }
+            html += `</tr></thead><tbody>`;
+
+            habits.forEach(habit => {
+                html += `<tr>
+          <td>
+            <div class="habit-name-cell">
+              <div class="habit-info">
+                <span>${habit.icon}</span>
+                <span>${habit.name}</span>
+              </div>
+              <button class="delete-btn" onclick="deleteHabit(${habit.id})" title="Delete">✕</button>
+            </div>
+          </td>`;
+
+                for (let d = 1; d <= DAYS_IN_MONTH; d++) {
+                    const isCompleted = habit.days.includes(d);
+                    let classes = "habit-cell";
+                    if (isCompleted) {
+                        classes += " completed";
+                    } else if (d === CURRENT_DAY) {
+                        classes += " today-due";
+                    } else if (d > CURRENT_DAY) {
+                        classes += " upcoming";
+                    }
+
+                    html += `
+            <td class="cell-wrapper">
+              <div class="${classes}" onclick="toggleDay(${habit.id}, ${d})">
+                ${isCompleted ? "✓" : ""}
+              </div>
+            </td>`;
+                }
+                html += `</tr>`;
+            });
+
+            html += `</tbody>`;
+            table.innerHTML = html;
+        }
+
+        function renderStatsAndWidgets() {
+            const totalHabits = habits.length;
+            document.getElementById("activeHabitsCount").textContent = totalHabits;
+
+            let totalCompletedSoFar = 0;
+            habits.forEach(h => {
+                totalCompletedSoFar += h.days.filter(d => d <= CURRENT_DAY).length;
+            });
+
+            const possibleSoFar = totalHabits * CURRENT_DAY;
+            const overallPct = possibleSoFar > 0 ? Math.round((totalCompletedSoFar / possibleSoFar) * 100) : 0;
+            const avgDaily = CURRENT_DAY > 0 ? (totalCompletedSoFar / CURRENT_DAY).toFixed(1) : "0.0";
+
+            document.getElementById("avgDailyCount").textContent = avgDaily;
+            document.getElementById("monthlyPctText").textContent = `${overallPct}%`;
+
+            const circumference = 175.9;
+            const offset = circumference - (overallPct / 100) * circumference;
+            document.getElementById("monthlyRing").style.strokeDashoffset = offset;
+
+            // Habit Analysis & Top Habits
+            const analysisEl = document.getElementById("analysisList");
+            const topEl = document.getElementById("topHabitsList");
+
+            const statsPerHabit = habits.map(h => {
+                const doneCount = h.days.filter(d => d <= CURRENT_DAY).length;
+                const pct = CURRENT_DAY > 0 ? Math.round((doneCount / CURRENT_DAY) * 100) : 0;
+                return { ...h, doneCount, pct };
+            });
+
+            analysisEl.innerHTML = statsPerHabit.map(h => `
+        <div class="analysis-item">
+          <div class="analysis-left">
+            <span class="analysis-name">${h.name}</span>
+            <div class="progress-track">
+              <div class="progress-fill" style="width: ${h.pct}%"></div>
+            </div>
+          </div>
+          <span class="analysis-percent">${h.pct}%</span>
+        </div>
+      `).join("");
+
+            const sortedTop = [...statsPerHabit].sort((a, b) => b.doneCount - a.doneCount).slice(0, 5);
+            topEl.innerHTML = sortedTop.map((h, idx) => `
+        <div class="top-item">
+          <span class="top-rank">0${idx + 1}</span>
+          <span class="top-title">${h.name}</span>
+          <span class="top-ratio">${h.doneCount}/${CURRENT_DAY}</span>
+          <span class="top-pct">${h.pct}%</span>
+        </div>
+      `).join("");
+
+            renderTrendChart(totalHabits);
+        }
+
+        function renderTrendChart(totalHabits) {
+            const svg = document.getElementById("trendSvg");
+            const width = 500;
+            const height = 125;
+            const padLeft = 36;
+            const padBottom = 18;
+            const chartW = width - padLeft - 10;
+            const chartH = height - padBottom - 10;
+
+            let points = [];
+            for (let d = 1; d <= CURRENT_DAY; d++) {
+                let count = 0;
+                habits.forEach(h => {
+                    if (h.days.includes(d)) count++;
+                });
+                const pct = totalHabits > 0 ? count / totalHabits : 0;
+                const x = padLeft + ((d - 1) / (DAYS_IN_MONTH - 1)) * chartW;
+                const y = 10 + (1 - pct) * chartH;
+                points.push({ x, y });
+            }
+
+            let pathD = "";
+            points.forEach((pt, i) => {
+                if (i === 0) pathD += `M ${pt.x},${pt.y}`;
+                else {
+                    const prev = points[i - 1];
+                    const cx = (prev.x + pt.x) / 2;
+                    pathD += ` C ${cx},${prev.y} ${cx},${pt.y} ${pt.x},${pt.y}`;
+                }
+            });
+
+            svg.innerHTML = `
+        <!-- Grid lines -->
+        <line x1="${padLeft}" y1="10" x2="${width}" y2="10" stroke="#1f1f24" stroke-width="1"/>
+        <line x1="${padLeft}" y1="${10 + chartH / 2}" x2="${width}" y2="${10 + chartH / 2}" stroke="#1f1f24" stroke-width="1"/>
+        <line x1="${padLeft}" y1="${10 + chartH}" x2="${width}" y2="${10 + chartH}" stroke="#1f1f24" stroke-width="1"/>
+
+        <!-- Y labels -->
+        <text x="0" y="14" fill="#71717a" font-size="10">100%</text>
+        <text x="5" y="${14 + chartH / 2}" fill="#71717a" font-size="10">50%</text>
+        <text x="12" y="${14 + chartH}" fill="#71717a" font-size="10">0%</text>
+
+        <!-- X labels -->
+        <text x="${padLeft}" y="138" fill="#71717a" font-size="10">01</text>
+        <text x="${padLeft + chartW * (9 / 30)}" y="138" fill="#71717a" font-size="10">10</text>
+        <text x="${padLeft + chartW * (19 / 30)}" y="138" fill="#71717a" font-size="10">20</text>
+        <text x="${padLeft + chartW}" y="138" fill="#71717a" font-size="10">31</text>
+
+        <!-- Smooth Trend Line -->
+        <path d="${pathD}" fill="none" stroke="#f5d087" stroke-width="2.2" stroke-linecap="round"/>
+      `;
+        }
+
+        function renderAll() {
+            renderMatrix();
+            renderStatsAndWidgets();
+        }
+
+        renderAll();
+    </script>
+</body>
+
+</html>
