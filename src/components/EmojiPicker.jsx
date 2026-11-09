@@ -197,3 +197,4 @@ export default function EmojiPicker({ selectedEmoji, onSelectEmoji }) {
     </div>
   );
 }
+

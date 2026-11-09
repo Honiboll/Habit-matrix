@@ -1,7 +1,7 @@
 {
   "name": "habit-matrix",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Minimalist dark & light Habit Matrix dashboard for macOS and Windows",
   "author": "Honiboll",
   "main": "electron/main.cjs",
@@ -49,8 +49,7 @@
     "mac": {
       "category": "public.app-category.productivity",
       "target": [
-        "dmg",
-        "zip"
+        "dmg"
       ]
     },
     "win": {

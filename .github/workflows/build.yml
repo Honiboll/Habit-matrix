@@ -34,9 +34,9 @@ jobs:
       - name: Build React web app
         run: npm run build
 
-      - name: Build macOS app (DMG & ZIP)
+      - name: Build macOS DMG installer
         if: runner.os == 'macOS'
-        run: npx electron-builder --mac
+        run: npx electron-builder --mac dmg
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -52,7 +52,6 @@ jobs:
           name: Habit-Matrix-${{ runner.os }}
           path: |
             release/*.dmg
-            release/*.zip
             release/*.exe
 
       - name: Create GitHub Release (on tag)
@@ -61,8 +60,6 @@ jobs:
         with:
           files: |
             release/*.dmg
-            release/*.zip
             release/*.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
