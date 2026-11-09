@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import { Plus, X, Check } from 'lucide-react';
-import { DAYS_IN_MONTH } from '../constants/initialHabits';
 
 export default function HabitMatrix({
   habits,
   currentDay,
-  daysInMonth = DAYS_IN_MONTH,
+  daysInMonth,
   onToggleDay,
   onDeleteHabit,
   onAddHabit
@@ -45,12 +44,19 @@ export default function HabitMatrix({
         >
           Habit matrix
         </h2>
-        <span
-          className="text-xs uppercase tracking-wider font-medium"
-          style={{ color: 'var(--text-muted)' }}
-        >
-          Day {currentDay} of {daysInMonth}
-        </span>
+        <div className="flex items-center gap-2">
+          <span
+            className="text-xs font-semibold px-2.5 py-0.5 rounded-full border transition-colors flex items-center gap-1.5"
+            style={{
+              backgroundColor: 'var(--today-badge-bg)',
+              color: 'var(--today-badge-text)',
+              borderColor: 'var(--border)'
+            }}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            Day {currentDay} of {daysInMonth} (Today)
+          </span>
+        </div>
       </div>
 
       {/* Table Container with horizontal scroll */}
@@ -73,24 +79,29 @@ export default function HabitMatrix({
                 return (
                   <th key={day} className="text-center pb-2">
                     <span
-                      className="block text-[10px] mb-1"
-                      style={{ color: 'var(--text-muted)' }}
+                      className="block text-[10px] mb-1 font-medium transition-colors"
+                      style={{
+                        color: isToday ? 'var(--accent)' : 'var(--text-muted)'
+                      }}
                     >
                       {letter}
                     </span>
                     <span
-                      className="inline-block w-[22px] h-[22px] leading-[22px] rounded-md text-xs transition-colors"
+                      className="inline-block w-[22px] h-[22px] leading-[22px] rounded-md text-xs transition-all"
                       style={
                         isToday
                           ? {
                               backgroundColor: 'var(--today-badge-bg)',
                               color: 'var(--today-badge-text)',
-                              fontWeight: 700
+                              fontWeight: 700,
+                              boxShadow: '0 0 8px rgba(245, 208, 135, 0.45)',
+                              border: '1.5px solid var(--accent)'
                             }
                           : {
                               color: 'var(--text-main)'
                             }
                       }
+                      title={isToday ? `Today is Day ${day}` : `Day ${day}`}
                     >
                       {day}
                     </span>
@@ -171,7 +182,8 @@ export default function HabitMatrix({
                     } else if (isToday) {
                       customStyle = {
                         backgroundColor: 'var(--cell-empty)',
-                        borderColor: 'var(--text-muted)'
+                        borderColor: 'var(--accent)',
+                        borderWidth: '1.5px'
                       };
                       cellClasses += 'hover:scale-105';
                     } else if (isUpcoming) {
@@ -195,7 +207,7 @@ export default function HabitMatrix({
                           onClick={() => onToggleDay(habit.id, day)}
                           style={customStyle}
                           className={cellClasses}
-                          title={`Day ${day}: ${isCompleted ? 'Completed' : 'Not completed'}`}
+                          title={`Day ${day}${isToday ? ' (Today)' : ''}: ${isCompleted ? 'Completed' : 'Not completed'}`}
                         >
                           {isCompleted ? (
                             <Check className="w-3 h-3 stroke-[3]" />
@@ -256,7 +268,8 @@ export default function HabitMatrix({
               className="w-4 h-4 rounded-md inline-block border"
               style={{
                 backgroundColor: 'var(--cell-empty)',
-                borderColor: 'var(--text-muted)'
+                borderColor: 'var(--accent)',
+                borderWidth: '1.5px'
               }}
             />
             <span>Due today</span>

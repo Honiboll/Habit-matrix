@@ -6,8 +6,6 @@ import HabitAnalysis from './components/HabitAnalysis';
 import TopHabits from './components/TopHabits';
 import {
   DEFAULT_HABITS,
-  CURRENT_DAY,
-  DAYS_IN_MONTH,
   STORAGE_KEY,
   THEME_KEY
 } from './constants/initialHabits';
@@ -21,6 +19,45 @@ export default function App() {
       return 'dark';
     }
   });
+
+  // Dynamic system dates
+  const [currentDay, setCurrentDay] = useState(() => new Date().getDate());
+  const [daysInMonth, setDaysInMonth] = useState(() => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  });
+  const [monthName, setMonthName] = useState(() =>
+    new Date().toLocaleString('en-US', { month: 'long' })
+  );
+  const [fullDateString, setFullDateString] = useState(() =>
+    new Date().toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    })
+  );
+
+  // Periodically synchronize with system clock
+  useEffect(() => {
+    const syncWithSystemDate = () => {
+      const now = new Date();
+      setCurrentDay(now.getDate());
+      setDaysInMonth(new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate());
+      setMonthName(now.toLocaleString('en-US', { month: 'long' }));
+      setFullDateString(
+        now.toLocaleDateString('en-US', {
+          weekday: 'long',
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric'
+        })
+      );
+    };
+
+    const timer = setInterval(syncWithSystemDate, 30000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Habit list state - starting completely clean with no pre-checked items
   const [habits, setHabits] = useState(() => {
@@ -41,13 +78,6 @@ export default function App() {
     }
     return DEFAULT_HABITS;
   });
-
-  const now = new Date();
-  const [currentDay] = useState(CURRENT_DAY);
-  const [daysInMonth] = useState(DAYS_IN_MONTH);
-  const [monthName] = useState(() =>
-    now.toLocaleString('en-US', { month: 'long' })
-  );
 
   // Sync theme attribute to <html> tag and persist
   useEffect(() => {
@@ -136,7 +166,9 @@ export default function App() {
         <HeaderStats
           habits={habits}
           currentDay={currentDay}
+          daysInMonth={daysInMonth}
           monthName={monthName}
+          fullDateString={fullDateString}
           theme={theme}
           onToggleTheme={handleToggleTheme}
           onClearAll={handleClearAll}

@@ -4,7 +4,9 @@ import { Calendar, Trash2, CheckSquare, Sun, Moon } from 'lucide-react';
 export default function HeaderStats({
   habits,
   currentDay,
+  daysInMonth,
   monthName,
+  fullDateString,
   theme,
   onToggleTheme,
   onClearAll,
@@ -32,7 +34,7 @@ export default function HeaderStats({
       className="flex flex-col md:flex-row md:items-center justify-between pb-5 mb-6 border-b transition-colors gap-4"
       style={{ borderColor: 'var(--border)' }}
     >
-      {/* Title */}
+      {/* Title & Live System Date */}
       <div>
         <h1
           className="text-3xl font-semibold tracking-tight transition-colors"
@@ -41,11 +43,15 @@ export default function HeaderStats({
           {monthName}
         </h1>
         <p
-          className="text-xs mt-1 flex items-center gap-1.5 transition-colors"
+          className="text-xs mt-1.5 flex items-center flex-wrap gap-2 transition-colors font-medium"
           style={{ color: 'var(--text-muted)' }}
         >
-          <Calendar className="w-3.5 h-3.5" />
-          Personal Habit Matrix • macOS Dashboard
+          <span className="flex items-center gap-1.5" style={{ color: 'var(--accent)' }}>
+            <Calendar className="w-3.5 h-3.5" />
+            <span>Today: {fullDateString}</span>
+          </span>
+          <span>•</span>
+          <span>Day {currentDay} of {daysInMonth}</span>
         </p>
       </div>
 
