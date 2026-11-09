@@ -2,7 +2,8 @@ import React from 'react';
 
 export default function HabitAnalysis({ habits, currentDay }) {
   const stats = habits.map((h) => {
-    const doneCount = h.days.filter((d) => d <= currentDay).length;
+    const completedDays = Array.isArray(h.activeDays) ? h.activeDays : [];
+    const doneCount = completedDays.filter((d) => d <= currentDay).length;
     const pct = currentDay > 0 ? Math.round((doneCount / currentDay) * 100) : 0;
     return { ...h, doneCount, pct };
   });

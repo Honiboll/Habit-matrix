@@ -1,14 +1,16 @@
 import React from 'react';
-import { Calendar, Trash2, CheckSquare, Sun, Moon } from 'lucide-react';
+import { Calendar, Trash2, CheckSquare, Sun, Moon, Globe } from 'lucide-react';
 
 export default function HeaderStats({
   habits,
   currentDay,
   daysInMonth,
-  monthName,
+  monthTitle,
   fullDateString,
+  calendarMode,
   theme,
   onToggleTheme,
+  onToggleCalendar,
   onClearAll,
   onUncheckAll
 }) {
@@ -16,7 +18,8 @@ export default function HeaderStats({
 
   let totalCompletedSoFar = 0;
   habits.forEach((h) => {
-    totalCompletedSoFar += h.days.filter((d) => d <= currentDay).length;
+    const completedDays = Array.isArray(h.activeDays) ? h.activeDays : [];
+    totalCompletedSoFar += completedDays.filter((d) => d <= currentDay).length;
   });
 
   const possibleSoFar = totalHabits * currentDay;
@@ -28,6 +31,7 @@ export default function HeaderStats({
   const strokeDashoffset = circumference - (overallPct / 100) * circumference;
 
   const isLight = theme === 'light';
+  const isJalali = calendarMode === 'jalali';
 
   return (
     <div
@@ -36,19 +40,31 @@ export default function HeaderStats({
     >
       {/* Title & Live System Date */}
       <div>
-        <h1
-          className="text-3xl font-semibold tracking-tight transition-colors"
-          style={{ color: 'var(--text-main)' }}
-        >
-          {monthName}
-        </h1>
+        <div className="flex items-center gap-3">
+          <h1
+            className="text-3xl font-semibold tracking-tight transition-colors"
+            style={{ color: 'var(--text-main)' }}
+          >
+            {monthTitle}
+          </h1>
+          <span
+            className="text-[11px] font-medium px-2 py-0.5 rounded-md border"
+            style={{
+              backgroundColor: 'var(--bg-card)',
+              borderColor: 'var(--border)',
+              color: 'var(--accent)'
+            }}
+          >
+            {isJalali ? 'Solar Hijri (شمسی)' : 'Gregorian (میلادی)'}
+          </span>
+        </div>
         <p
           className="text-xs mt-1.5 flex items-center flex-wrap gap-2 transition-colors font-medium"
           style={{ color: 'var(--text-muted)' }}
         >
           <span className="flex items-center gap-1.5" style={{ color: 'var(--accent)' }}>
             <Calendar className="w-3.5 h-3.5" />
-            <span>Today: {fullDateString}</span>
+            <span>{fullDateString}</span>
           </span>
           <span>•</span>
           <span>Day {currentDay} of {daysInMonth}</span>
@@ -56,7 +72,7 @@ export default function HeaderStats({
       </div>
 
       {/* Stats Row */}
-      <div className="flex items-center flex-wrap gap-7 sm:gap-10">
+      <div className="flex items-center flex-wrap gap-6 sm:gap-9">
         {/* Active Habits */}
         <div className="flex flex-col">
           <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
@@ -122,8 +138,23 @@ export default function HeaderStats({
           </div>
         </div>
 
-        {/* Action Controls & Theme Toggle */}
+        {/* Action Controls, Calendar & Theme Toggle */}
         <div className="flex items-center gap-2">
+          {/* Calendar Mode Toggle */}
+          <button
+            onClick={onToggleCalendar}
+            title={isJalali ? "Switch to Gregorian Calendar (میلادی)" : "تغییر به تقویم شمسی (Solar Hijri)"}
+            className="px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors border cursor-pointer flex items-center gap-1.5 hover:opacity-85"
+            style={{
+              backgroundColor: 'var(--bg-card)',
+              borderColor: 'var(--border)',
+              color: 'var(--text-main)'
+            }}
+          >
+            <Globe className="w-3.5 h-3.5 text-[#f5d087]" />
+            <span>{isJalali ? 'شمسی' : 'میلادی'}</span>
+          </button>
+
           {/* Theme Toggle (Dark / Light) */}
           <button
             onClick={onToggleTheme}
@@ -146,7 +177,7 @@ export default function HeaderStats({
           {totalHabits > 0 && onUncheckAll && (
             <button
               onClick={onUncheckAll}
-              title="Uncheck all completed days"
+              title="Uncheck all completed days for this month"
               className="px-2.5 py-1.5 text-xs rounded-lg transition-colors border flex items-center gap-1.5 cursor-pointer hover:opacity-80"
               style={{
                 backgroundColor: 'var(--bg-card)',

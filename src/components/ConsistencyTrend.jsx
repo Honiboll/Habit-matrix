@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { DAYS_IN_MONTH } from '../constants/initialHabits';
 
 export default function ConsistencyTrend({
   habits,
   currentDay,
-  daysInMonth = DAYS_IN_MONTH
+  daysInMonth
 }) {
   const [hoveredPoint, setHoveredPoint] = useState(null);
 
@@ -22,7 +21,8 @@ export default function ConsistencyTrend({
     for (let d = 1; d <= currentDay; d++) {
       let count = 0;
       habits.forEach((h) => {
-        if (h.days.includes(d)) count++;
+        const completedDays = Array.isArray(h.activeDays) ? h.activeDays : [];
+        if (completedDays.includes(d)) count++;
       });
 
       const pct = totalHabits > 0 ? count / totalHabits : 0;

@@ -5,17 +5,14 @@ export default function HabitMatrix({
   habits,
   currentDay,
   daysInMonth,
+  getDayLetter,
+  calendarMode,
   onToggleDay,
   onDeleteHabit,
   onAddHabit
 }) {
   const [icon, setIcon] = useState('');
   const [name, setName] = useState('');
-
-  const now = new Date();
-  const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth();
-  const dayNames = ["S", "M", "T", "W", "T", "F", "S"];
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -72,8 +69,7 @@ export default function HabitMatrix({
               </th>
               {Array.from({ length: daysInMonth }, (_, i) => {
                 const day = i + 1;
-                const dayOfWeek = new Date(currentYear, currentMonth, day).getDay();
-                const letter = dayNames[dayOfWeek];
+                const letter = getDayLetter ? getDayLetter(day) : '';
                 const isToday = day === currentDay;
 
                 return (
@@ -134,95 +130,99 @@ export default function HabitMatrix({
                 </td>
               </tr>
             ) : (
-              habits.map((habit) => (
-                <tr
-                  key={habit.id}
-                  className="group transition-colors rounded-lg hover:opacity-95"
-                >
-                  {/* Habit Name Cell */}
-                  <td className="pr-3.5 h-[32px] align-middle">
-                    <div className="flex items-center justify-between">
-                      <div
-                        className="flex items-center gap-2.5 text-sm font-medium truncate max-w-[170px]"
-                        style={{ color: 'var(--text-main)' }}
-                      >
-                        <span className="text-base select-none shrink-0">{habit.icon}</span>
-                        <span className="truncate" title={habit.name}>{habit.name}</span>
-                      </div>
+              habits.map((habit) => {
+                const completedDays = Array.isArray(habit.activeDays) ? habit.activeDays : [];
 
-                      <button
-                        onClick={() => onDeleteHabit(habit.id)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded cursor-pointer hover:text-red-400"
-                        style={{ color: 'var(--text-muted)' }}
-                        title="Delete habit"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </td>
-
-                  {/* Day Checkboxes */}
-                  {Array.from({ length: daysInMonth }, (_, i) => {
-                    const day = i + 1;
-                    const isCompleted = habit.days.includes(day);
-                    const isToday = day === currentDay;
-                    const isUpcoming = day > currentDay;
-
-                    let customStyle = {};
-                    let cellClasses =
-                      'w-[22px] h-[22px] rounded-md flex items-center justify-center cursor-pointer transition-all duration-150 border text-xs mx-auto ';
-
-                    if (isCompleted) {
-                      customStyle = {
-                        backgroundColor: 'var(--cell-done)',
-                        color: 'var(--cell-done-text)',
-                        borderColor: 'var(--cell-done-border)'
-                      };
-                      cellClasses += 'hover:scale-105';
-                    } else if (isToday) {
-                      customStyle = {
-                        backgroundColor: 'var(--cell-empty)',
-                        borderColor: 'var(--accent)',
-                        borderWidth: '1.5px'
-                      };
-                      cellClasses += 'hover:scale-105';
-                    } else if (isUpcoming) {
-                      customStyle = {
-                        backgroundColor: 'var(--cell-empty)',
-                        borderColor: 'transparent'
-                      };
-                      cellClasses += 'hover:scale-105';
-                    } else {
-                      // Missed past day
-                      customStyle = {
-                        backgroundColor: 'var(--cell-missed)',
-                        borderColor: 'transparent'
-                      };
-                      cellClasses += 'hover:scale-105';
-                    }
-
-                    return (
-                      <td key={day} className="text-center align-middle p-0">
+                return (
+                  <tr
+                    key={habit.id}
+                    className="group transition-colors rounded-lg hover:opacity-95"
+                  >
+                    {/* Habit Name Cell */}
+                    <td className="pr-3.5 h-[32px] align-middle">
+                      <div className="flex items-center justify-between">
                         <div
-                          onClick={() => onToggleDay(habit.id, day)}
-                          style={customStyle}
-                          className={cellClasses}
-                          title={`Day ${day}${isToday ? ' (Today)' : ''}: ${isCompleted ? 'Completed' : 'Not completed'}`}
+                          className="flex items-center gap-2.5 text-sm font-medium truncate max-w-[170px]"
+                          style={{ color: 'var(--text-main)' }}
                         >
-                          {isCompleted ? (
-                            <Check className="w-3 h-3 stroke-[3]" />
-                          ) : isUpcoming ? (
-                            <span
-                              className="w-1 h-1 rounded-full"
-                              style={{ backgroundColor: 'var(--text-muted)' }}
-                            />
-                          ) : null}
+                          <span className="text-base select-none shrink-0">{habit.icon}</span>
+                          <span className="truncate" title={habit.name}>{habit.name}</span>
                         </div>
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))
+
+                        <button
+                          onClick={() => onDeleteHabit(habit.id)}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded cursor-pointer hover:text-red-400"
+                          style={{ color: 'var(--text-muted)' }}
+                          title="Delete habit"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
+
+                    {/* Day Checkboxes */}
+                    {Array.from({ length: daysInMonth }, (_, i) => {
+                      const day = i + 1;
+                      const isCompleted = completedDays.includes(day);
+                      const isToday = day === currentDay;
+                      const isUpcoming = day > currentDay;
+
+                      let customStyle = {};
+                      let cellClasses =
+                        'w-[22px] h-[22px] rounded-md flex items-center justify-center cursor-pointer transition-all duration-150 border text-xs mx-auto ';
+
+                      if (isCompleted) {
+                        customStyle = {
+                          backgroundColor: 'var(--cell-done)',
+                          color: 'var(--cell-done-text)',
+                          borderColor: 'var(--cell-done-border)'
+                        };
+                        cellClasses += 'hover:scale-105';
+                      } else if (isToday) {
+                        customStyle = {
+                          backgroundColor: 'var(--cell-empty)',
+                          borderColor: 'var(--accent)',
+                          borderWidth: '1.5px'
+                        };
+                        cellClasses += 'hover:scale-105';
+                      } else if (isUpcoming) {
+                        customStyle = {
+                          backgroundColor: 'var(--cell-empty)',
+                          borderColor: 'transparent'
+                        };
+                        cellClasses += 'hover:scale-105';
+                      } else {
+                        // Missed past day
+                        customStyle = {
+                          backgroundColor: 'var(--cell-missed)',
+                          borderColor: 'transparent'
+                        };
+                        cellClasses += 'hover:scale-105';
+                      }
+
+                      return (
+                        <td key={day} className="text-center align-middle p-0">
+                          <div
+                            onClick={() => onToggleDay(habit.id, day)}
+                            style={customStyle}
+                            className={cellClasses}
+                            title={`Day ${day}${isToday ? ' (Today)' : ''}: ${isCompleted ? 'Completed' : 'Not completed'}`}
+                          >
+                            {isCompleted ? (
+                              <Check className="w-3 h-3 stroke-[3]" />
+                            ) : isUpcoming ? (
+                              <span
+                                className="w-1 h-1 rounded-full"
+                                style={{ backgroundColor: 'var(--text-muted)' }}
+                              />
+                            ) : null}
+                          </div>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>

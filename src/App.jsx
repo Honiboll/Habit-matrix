@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import HeaderStats from './components/HeaderStats';
 import HabitMatrix from './components/HabitMatrix';
 import ConsistencyTrend from './components/ConsistencyTrend';
@@ -7,8 +7,10 @@ import TopHabits from './components/TopHabits';
 import {
   DEFAULT_HABITS,
   STORAGE_KEY,
-  THEME_KEY
+  THEME_KEY,
+  CALENDAR_KEY
 } from './constants/initialHabits';
+import { getCalendarDetails } from './utils/calendar';
 
 export default function App() {
   // Theme state: dark / light
@@ -20,49 +22,33 @@ export default function App() {
     }
   });
 
-  // Dynamic system dates
-  const [currentDay, setCurrentDay] = useState(() => new Date().getDate());
-  const [daysInMonth, setDaysInMonth] = useState(() => {
-    const d = new Date();
-    return new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  // Calendar Mode: 'gregorian' | 'jalali'
+  const [calendarMode, setCalendarMode] = useState(() => {
+    try {
+      return localStorage.getItem(CALENDAR_KEY) || 'jalali';
+    } catch {
+      return 'jalali';
+    }
   });
-  const [monthName, setMonthName] = useState(() =>
-    new Date().toLocaleString('en-US', { month: 'long' })
-  );
-  const [fullDateString, setFullDateString] = useState(() =>
-    new Date().toLocaleDateString('en-US', {
-      weekday: 'long',
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    })
-  );
 
-  // Periodically synchronize with system clock
+  // Live system date ticker (updates every 30 seconds)
+  const [systemDate, setSystemDate] = useState(() => new Date());
+
   useEffect(() => {
-    const syncWithSystemDate = () => {
-      const now = new Date();
-      setCurrentDay(now.getDate());
-      setDaysInMonth(new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate());
-      setMonthName(now.toLocaleString('en-US', { month: 'long' }));
-      setFullDateString(
-        now.toLocaleDateString('en-US', {
-          weekday: 'long',
-          month: 'short',
-          day: 'numeric',
-          year: 'numeric'
-        })
-      );
-    };
-
-    const timer = setInterval(syncWithSystemDate, 30000);
+    const timer = setInterval(() => {
+      setSystemDate(new Date());
+    }, 30000);
     return () => clearInterval(timer);
   }, []);
 
-  // Habit list state - starting completely clean with no pre-checked items
+  // Compute active calendar details synchronized with systemDate
+  const calendarData = useMemo(() => {
+    return getCalendarDetails(calendarMode, systemDate);
+  }, [calendarMode, systemDate]);
+
+  // Habit list state
   const [habits, setHabits] = useState(() => {
     try {
-      // Clear legacy storage keys with pre-filled demo data
       localStorage.removeItem("mac_habit_matrix_v1");
       localStorage.removeItem("mac_habit_matrix_v2");
 
@@ -89,6 +75,15 @@ export default function App() {
     }
   }, [theme]);
 
+  // Persist calendarMode
+  useEffect(() => {
+    try {
+      localStorage.setItem(CALENDAR_KEY, calendarMode);
+    } catch (err) {
+      console.error("Error saving calendarMode to localStorage:", err);
+    }
+  }, [calendarMode]);
+
   // Save habits to localStorage
   useEffect(() => {
     try {
@@ -103,16 +98,27 @@ export default function App() {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   };
 
-  // Toggle Day completed
+  // Toggle Calendar Mode (Gregorian <-> Jalali)
+  const handleToggleCalendar = () => {
+    setCalendarMode((prev) => (prev === 'gregorian' ? 'jalali' : 'gregorian'));
+  };
+
+  // Toggle Day completed for the active calendar
   const handleToggleDay = (habitId, day) => {
     setHabits((prev) =>
       prev.map((h) => {
         if (h.id !== habitId) return h;
-        const exists = h.days.includes(day);
+
+        const isJalali = calendarMode === 'jalali';
+        const currentDaysList = isJalali ? (h.daysJalali || []) : (h.days || []);
+        const exists = currentDaysList.includes(day);
         const updatedDays = exists
-          ? h.days.filter((d) => d !== day)
-          : [...h.days, day].sort((a, b) => a - b);
-        return { ...h, days: updatedDays };
+          ? currentDaysList.filter((d) => d !== day)
+          : [...currentDaysList, day].sort((a, b) => a - b);
+
+        return isJalali
+          ? { ...h, daysJalali: updatedDays }
+          : { ...h, days: updatedDays };
       })
     );
   };
@@ -128,21 +134,38 @@ export default function App() {
       id: Date.now(),
       icon,
       name,
-      days: []
+      days: [],
+      daysJalali: []
     };
     setHabits((prev) => [...prev, newHabit]);
   };
 
-  // Uncheck all days
+  // Uncheck all days for active calendar
   const handleUncheckAll = () => {
-    if (window.confirm("Are you sure you want to uncheck all days?")) {
-      setHabits((prev) => prev.map((h) => ({ ...h, days: [] })));
+    const confirmMsg =
+      calendarMode === 'jalali'
+        ? "آیا مایلید تمام تیک‌های روزهای تقویم شمسی پاک شوند؟"
+        : "Are you sure you want to uncheck all days for the Gregorian calendar?";
+
+    if (window.confirm(confirmMsg)) {
+      setHabits((prev) =>
+        prev.map((h) =>
+          calendarMode === 'jalali'
+            ? { ...h, daysJalali: [] }
+            : { ...h, days: [] }
+        )
+      );
     }
   };
 
   // Clear all habits
   const handleClearAll = () => {
-    if (window.confirm("Are you sure you want to delete all habits and start fresh?")) {
+    const confirmMsg =
+      calendarMode === 'jalali'
+        ? "آیا از حذف تمام عادت‌ها مطمئن هستید؟"
+        : "Are you sure you want to delete all habits and start fresh?";
+
+    if (window.confirm(confirmMsg)) {
       setHabits([]);
       try {
         localStorage.removeItem(STORAGE_KEY);
@@ -151,6 +174,14 @@ export default function App() {
       }
     }
   };
+
+  // Prepare habits with activeDays based on current calendar mode
+  const habitsForRender = useMemo(() => {
+    return habits.map((h) => ({
+      ...h,
+      activeDays: calendarMode === 'jalali' ? (h.daysJalali || []) : (h.days || [])
+    }));
+  }, [habits, calendarMode]);
 
   return (
     <div
@@ -164,22 +195,26 @@ export default function App() {
       <div className="max-w-[1440px] mx-auto">
         {/* Header Stats & Action Controls */}
         <HeaderStats
-          habits={habits}
-          currentDay={currentDay}
-          daysInMonth={daysInMonth}
-          monthName={monthName}
-          fullDateString={fullDateString}
+          habits={habitsForRender}
+          currentDay={calendarData.currentDay}
+          daysInMonth={calendarData.daysInMonth}
+          monthTitle={calendarData.monthTitle}
+          fullDateString={calendarData.fullDateString}
+          calendarMode={calendarMode}
           theme={theme}
           onToggleTheme={handleToggleTheme}
+          onToggleCalendar={handleToggleCalendar}
           onClearAll={handleClearAll}
           onUncheckAll={handleUncheckAll}
         />
 
         {/* Habit Matrix */}
         <HabitMatrix
-          habits={habits}
-          currentDay={currentDay}
-          daysInMonth={daysInMonth}
+          habits={habitsForRender}
+          currentDay={calendarData.currentDay}
+          daysInMonth={calendarData.daysInMonth}
+          getDayLetter={calendarData.getDayLetter}
+          calendarMode={calendarMode}
           onToggleDay={handleToggleDay}
           onDeleteHabit={handleDeleteHabit}
           onAddHabit={handleAddHabit}
@@ -188,12 +223,18 @@ export default function App() {
         {/* Bottom Widgets */}
         <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-[1.5fr_1.1fr_1fr] gap-5">
           <ConsistencyTrend
-            habits={habits}
-            currentDay={currentDay}
-            daysInMonth={daysInMonth}
+            habits={habitsForRender}
+            currentDay={calendarData.currentDay}
+            daysInMonth={calendarData.daysInMonth}
           />
-          <HabitAnalysis habits={habits} currentDay={currentDay} />
-          <TopHabits habits={habits} currentDay={currentDay} />
+          <HabitAnalysis
+            habits={habitsForRender}
+            currentDay={calendarData.currentDay}
+          />
+          <TopHabits
+            habits={habitsForRender}
+            currentDay={calendarData.currentDay}
+          />
         </div>
       </div>
     </div>
