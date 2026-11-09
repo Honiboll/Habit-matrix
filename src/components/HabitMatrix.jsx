@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Plus, X, Check } from 'lucide-react';
+import EmojiPicker from './EmojiPicker';
 
 export default function HabitMatrix({
   habits,
@@ -11,17 +12,16 @@ export default function HabitMatrix({
   onDeleteHabit,
   onAddHabit
 }) {
-  const [icon, setIcon] = useState('');
+  const [icon, setIcon] = useState('✨');
   const [name, setName] = useState('');
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!name.trim()) return;
     onAddHabit({
-      icon: icon.trim() || '✨',
+      icon: icon || '✨',
       name: name.trim()
     });
-    setIcon('');
     setName('');
   };
 
@@ -124,7 +124,7 @@ export default function HabitMatrix({
                       No habits added yet
                     </p>
                     <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                      Enter a habit name below and click "Add Habit" to start tracking.
+                      Pick an icon, enter a habit name below and click "Add Habit" to start tracking.
                     </p>
                   </div>
                 </td>
@@ -292,28 +292,20 @@ export default function HabitMatrix({
           </div>
         </div>
 
-        {/* Add Habit Form */}
-        <form onSubmit={handleSubmit} className="flex items-center gap-2 w-full sm:w-auto">
-          <input
-            type="text"
-            value={icon}
-            onChange={(e) => setIcon(e.target.value)}
-            placeholder="Icon (🏃)"
-            maxLength={2}
-            className="w-20 text-xs px-2.5 py-1.5 rounded-lg border focus:outline-none text-center transition-colors"
-            style={{
-              backgroundColor: 'var(--input-bg)',
-              borderColor: 'var(--border)',
-              color: 'var(--text-main)'
-            }}
+        {/* Add Habit Form with EmojiPicker Popover */}
+        <form onSubmit={handleSubmit} className="flex items-center gap-2 w-full sm:w-auto relative">
+          <EmojiPicker
+            selectedEmoji={icon}
+            onSelectEmoji={(selected) => setIcon(selected)}
           />
+
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="New habit name..."
             required
-            className="flex-1 sm:w-48 text-xs px-3 py-1.5 rounded-lg border focus:outline-none transition-colors"
+            className="flex-1 sm:w-52 text-xs px-3 py-1.5 rounded-lg border focus:outline-none transition-colors"
             style={{
               backgroundColor: 'var(--input-bg)',
               borderColor: 'var(--border)',
