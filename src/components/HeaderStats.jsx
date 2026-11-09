@@ -1,5 +1,6 @@
 import React from 'react';
-import { Calendar, Trash2, CheckSquare, Sun, Moon, Globe } from 'lucide-react';
+import { Calendar, Trash2, CheckSquare, Sun, Moon, Globe, ArrowUpCircle } from 'lucide-react';
+import { APP_VERSION } from '../constants/initialHabits';
 
 export default function HeaderStats({
   habits,
@@ -9,8 +10,10 @@ export default function HeaderStats({
   fullDateString,
   calendarMode,
   theme,
+  hasUpdate,
   onToggleTheme,
   onToggleCalendar,
+  onOpenUpdates,
   onClearAll,
   onUncheckAll
 }) {
@@ -72,7 +75,7 @@ export default function HeaderStats({
       </div>
 
       {/* Stats Row */}
-      <div className="flex items-center flex-wrap gap-6 sm:gap-9">
+      <div className="flex items-center flex-wrap gap-5 sm:gap-8">
         {/* Active Habits */}
         <div className="flex flex-col">
           <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
@@ -138,8 +141,26 @@ export default function HeaderStats({
           </div>
         </div>
 
-        {/* Action Controls, Calendar & Theme Toggle */}
+        {/* Action Controls: Updates, Calendar, Theme, Reset */}
         <div className="flex items-center gap-2">
+          {/* Check for Updates Button */}
+          <button
+            onClick={onOpenUpdates}
+            title={`Check for Updates (Current: v${APP_VERSION})`}
+            className="relative px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors border cursor-pointer flex items-center gap-1.5 hover:opacity-85"
+            style={{
+              backgroundColor: hasUpdate ? 'rgba(245, 208, 135, 0.15)' : 'var(--bg-card)',
+              borderColor: hasUpdate ? 'var(--accent)' : 'var(--border)',
+              color: hasUpdate ? 'var(--accent)' : 'var(--text-main)'
+            }}
+          >
+            <ArrowUpCircle className={`w-3.5 h-3.5 ${hasUpdate ? 'animate-bounce' : ''}`} />
+            <span>{hasUpdate ? 'Update Available' : `v${APP_VERSION}`}</span>
+            {hasUpdate && (
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping absolute -top-1 -right-1" />
+            )}
+          </button>
+
           {/* Calendar Mode Toggle */}
           <button
             onClick={onToggleCalendar}

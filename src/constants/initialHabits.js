@@ -1,3 +1,6 @@
+// Current app version
+export const APP_VERSION = "1.0.1";
+
 // Default habits are completely empty
 export const DEFAULT_HABITS = [];
 

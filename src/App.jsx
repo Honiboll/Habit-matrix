@@ -4,11 +4,13 @@ import HabitMatrix from './components/HabitMatrix';
 import ConsistencyTrend from './components/ConsistencyTrend';
 import HabitAnalysis from './components/HabitAnalysis';
 import TopHabits from './components/TopHabits';
+import UpdateModal from './components/UpdateModal';
 import {
   DEFAULT_HABITS,
   STORAGE_KEY,
   THEME_KEY,
-  CALENDAR_KEY
+  CALENDAR_KEY,
+  APP_VERSION
 } from './constants/initialHabits';
 import { getCalendarDetails } from './utils/calendar';
 
@@ -30,6 +32,43 @@ export default function App() {
       return 'jalali';
     }
   });
+
+  // Update modal state & update badge
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const [hasUpdateBadge, setHasUpdateBadge] = useState(false);
+
+  // Background check for updates on startup
+  useEffect(() => {
+    const silentCheckUpdates = async () => {
+      try {
+        const res = await fetch(
+          'https://api.github.com/repos/Honiboll/Habit-matrix/releases/latest',
+          { headers: { Accept: 'application/vnd.github.v3+json' } }
+        );
+        if (res.ok) {
+          const data = await res.json();
+          const latestTag = (data.tag_name || data.name || '').replace(/^v/, '');
+          const current = APP_VERSION.replace(/^v/, '');
+          
+          const lParts = latestTag.split('.').map(Number);
+          const cParts = current.split('.').map(Number);
+          for (let i = 0; i < Math.max(lParts.length, cParts.length); i++) {
+            const l = lParts[i] || 0;
+            const c = cParts[i] || 0;
+            if (l > c) {
+              setHasUpdateBadge(true);
+              break;
+            }
+            if (l < c) break;
+          }
+        }
+      } catch {
+        // Silently ignore if offline
+      }
+    };
+
+    silentCheckUpdates();
+  }, []);
 
   // Live system date ticker (updates every 30 seconds)
   const [systemDate, setSystemDate] = useState(() => new Date());
@@ -202,8 +241,10 @@ export default function App() {
           fullDateString={calendarData.fullDateString}
           calendarMode={calendarMode}
           theme={theme}
+          hasUpdate={hasUpdateBadge}
           onToggleTheme={handleToggleTheme}
           onToggleCalendar={handleToggleCalendar}
+          onOpenUpdates={() => setIsUpdateModalOpen(true)}
           onClearAll={handleClearAll}
           onUncheckAll={handleUncheckAll}
         />
@@ -237,6 +278,13 @@ export default function App() {
           />
         </div>
       </div>
+
+      {/* In-App Update Modal */}
+      <UpdateModal
+        isOpen={isUpdateModalOpen}
+        onClose={() => setIsUpdateModalOpen(false)}
+        currentVersion={APP_VERSION}
+      />
     </div>
   );
 }

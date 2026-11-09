@@ -104,3 +104,4 @@ export function getCalendarDetails(calendarMode = 'gregorian', baseDate = new Da
     getDayLetter
   };
 }
+
