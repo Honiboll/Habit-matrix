@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Download, RefreshCw, CheckCircle2, AlertCircle, X, ExternalLink, Sparkles } from 'lucide-react';
+import { Download, RefreshCw, CheckCircle2, AlertCircle, X, ExternalLink, Sparkles, Copy, Check } from 'lucide-react';
 
 const REPO_OWNER = 'Honiboll';
 const REPO_NAME = 'Habit-matrix';
@@ -13,6 +13,7 @@ export default function UpdateModal({
   const [updateInfo, setUpdateInfo] = useState(null);
   const [error, setError] = useState(null);
   const [hasNewVersion, setHasNewVersion] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   // Compare semantic versions (e.g. "1.0.1" vs "1.0.0")
   const isNewer = (latest, current) => {
@@ -28,6 +29,19 @@ export default function UpdateModal({
       if (l < c) return false;
     }
     return false;
+  };
+
+  const handleOpenLink = (e, url) => {
+    if (window.electronAPI && window.electronAPI.openExternal) {
+      e.preventDefault();
+      window.electronAPI.openExternal(url);
+    }
+  };
+
+  const copyMacFix = () => {
+    navigator.clipboard.writeText('xattr -cr "/Applications/Habit Matrix.app"');
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
   };
 
   const checkForUpdates = async () => {
@@ -52,10 +66,12 @@ export default function UpdateModal({
       const latestTag = data.tag_name || data.name || '';
       const updateAvailable = isNewer(latestTag, currentVersion);
 
-      // Find specific platform downloads
+      // Prioritize .dmg over .zip for macOS!
       const assets = data.assets || [];
       const winAsset = assets.find((a) => a.name.endsWith('.exe'));
-      const macAsset = assets.find((a) => a.name.endsWith('.dmg') || a.name.endsWith('.zip'));
+      const macDmgAsset = assets.find((a) => a.name.endsWith('.dmg'));
+      const macZipAsset = assets.find((a) => a.name.endsWith('.zip'));
+      const macAsset = macDmgAsset || macZipAsset;
 
       setUpdateInfo({
         version: latestTag,
@@ -66,7 +82,8 @@ export default function UpdateModal({
         winUrl: winAsset ? winAsset.browser_download_url : null,
         winName: winAsset ? winAsset.name : null,
         macUrl: macAsset ? macAsset.browser_download_url : null,
-        macName: macAsset ? macAsset.name : null
+        macName: macAsset ? macAsset.name : null,
+        isMacDmg: !!macDmgAsset
       });
 
       setHasNewVersion(updateAvailable);
@@ -108,7 +125,7 @@ export default function UpdateModal({
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg hover:opacity-75 transition-opacity"
+            className="p-1 rounded-lg hover:opacity-75 transition-opacity cursor-pointer"
             style={{ color: 'var(--text-muted)' }}
           >
             <X className="w-5 h-5" />
@@ -116,7 +133,7 @@ export default function UpdateModal({
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-5">
+        <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
           {/* Version Info Badge */}
           <div
             className="flex items-center justify-between p-3.5 rounded-xl border text-xs"
@@ -174,43 +191,43 @@ export default function UpdateModal({
                     Published on: {updateInfo.publishedAt}
                   </p>
                 )}
-                <div
-                  className="p-3 rounded-lg border mt-2 max-h-32 overflow-y-auto whitespace-pre-line text-[11px]"
-                  style={{
-                    backgroundColor: 'var(--bg-card)',
-                    borderColor: 'var(--border)',
-                    color: 'var(--text-main)'
-                  }}
-                >
-                  {updateInfo.notes}
-                </div>
+                {updateInfo.notes && (
+                  <div
+                    className="p-3 rounded-lg border mt-2 max-h-28 overflow-y-auto whitespace-pre-line text-[11px]"
+                    style={{
+                      backgroundColor: 'var(--bg-card)',
+                      borderColor: 'var(--border)',
+                      color: 'var(--text-main)'
+                    }}
+                  >
+                    {updateInfo.notes}
+                  </div>
+                )}
               </div>
 
               {/* Download Buttons */}
-              <div className="space-y-2 pt-1">
+              <div className="space-y-2">
                 <p className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>
-                  Download installer for your operating system:
+                  Direct download installers from GitHub:
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {updateInfo.winUrl && (
-                    <a
-                      href={updateInfo.winUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold bg-[#f5d087] text-[#09090b] hover:bg-[#ebd59a] transition-colors"
-                    >
-                      <Download className="w-3.5 h-3.5 stroke-[2.5]" />
-                      <span>Windows (.exe)</span>
-                    </a>
-                  )}
-
                   {updateInfo.macUrl && (
                     <a
                       href={updateInfo.macUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold border hover:opacity-85 transition-colors"
+                      onClick={(e) => handleOpenLink(e, updateInfo.macUrl)}
+                      className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-xs font-semibold bg-[#f5d087] text-[#09090b] hover:bg-[#ebd59a] transition-colors shadow-sm"
+                    >
+                      <Download className="w-3.5 h-3.5 stroke-[2.5]" />
+                      <span>Download macOS (.dmg)</span>
+                    </a>
+                  )}
+
+                  {updateInfo.winUrl && (
+                    <a
+                      href={updateInfo.winUrl}
+                      onClick={(e) => handleOpenLink(e, updateInfo.winUrl)}
+                      className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-xs font-semibold border hover:opacity-85 transition-colors"
                       style={{
                         backgroundColor: 'var(--cell-empty)',
                         borderColor: 'var(--border)',
@@ -218,19 +235,47 @@ export default function UpdateModal({
                       }}
                     >
                       <Download className="w-3.5 h-3.5" />
-                      <span>macOS (.dmg)</span>
+                      <span>Windows (.exe)</span>
                     </a>
                   )}
                 </div>
 
-                <div className="text-center pt-2">
+                {/* macOS Gatekeeper Security Notice */}
+                <div
+                  className="p-3 rounded-xl border text-[11px] space-y-2"
+                  style={{
+                    backgroundColor: 'var(--cell-empty)',
+                    borderColor: 'var(--border)'
+                  }}
+                >
+                  <div className="flex items-center gap-1.5 font-medium text-amber-400">
+                    <AlertCircle className="w-3.5 h-3.5" />
+                    <span>راهنمای باز کردن در مک (رفع ارور "Damaged" یا مسدودی)</span>
+                  </div>
+                  <p style={{ color: 'var(--text-muted)' }} className="leading-relaxed">
+                    در مک، برنامه‌های دانلود شده از اینترنت که لایسنس پولی اپل ندارند، توسط Gatekeeper علامت‌گذاری می‌شوند. برای رفع این مورد کافیست دستور زیر را در Terminal اجرا کنید:
+                  </p>
+                  <div className="flex items-center justify-between p-2 rounded bg-black/40 border border-zinc-800 font-mono text-[10px]">
+                    <span className="truncate select-all text-amber-200">
+                      xattr -cr "/Applications/Habit Matrix.app"
+                    </span>
+                    <button
+                      onClick={copyMacFix}
+                      className="ml-2 px-2 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-200 flex items-center gap-1 shrink-0 transition-colors"
+                    >
+                      {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                      <span>{copied ? 'کپی شد' : 'کپی'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="text-center pt-1">
                   <a
                     href={updateInfo.htmlUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    onClick={(e) => handleOpenLink(e, updateInfo.htmlUrl)}
                     className="inline-flex items-center gap-1.5 text-xs text-[#71717a] hover:text-[#f4f4f6] transition-colors"
                   >
-                    <span>View full release notes on GitHub</span>
+                    <span>View full release on GitHub</span>
                     <ExternalLink className="w-3 h-3" />
                   </a>
                 </div>
